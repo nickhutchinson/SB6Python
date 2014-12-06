@@ -9,6 +9,8 @@
 struct SB6AppContext {
   void* self;
   void (*render)(void* self, double currentTime);
+  void (*startup)(void* self);
+  void (*shutdown)(void* self);
 };
 
 typedef struct __SB6Application* SB6ApplicationRef;
