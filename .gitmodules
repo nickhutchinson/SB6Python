@@ -1,0 +1,3 @@
+[submodule "src/sb6/sb6"]
+	path = third_party/sb6
+	url = https://github.com/openglsuperbible/sb6code.git
