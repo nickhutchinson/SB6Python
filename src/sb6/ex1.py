@@ -9,6 +9,18 @@ import pkg_resources
 
 NULL_GL_OBJECT = 0
 
+def override(klass):
+    def f(meth):
+        name = meth.__name__
+        if not getattr(klass, name):
+            raise TypeError(
+                'Method {!r} must be overridden from class {!r}'.format(
+                    name,
+                    klass.__name__))
+        return meth
+
+    return f
+
 
 class MyApplication(ISB6AppDelegate):
 
@@ -17,11 +29,13 @@ class MyApplication(ISB6AppDelegate):
         self._program = NULL_GL_OBJECT
         self._vao = NULL_GL_OBJECT
 
+    @override(ISB6AppDelegate)
     def application_did_finish_launching(self, app):
         self._program = self.create_shader_program()
         self._vao = GL.glGenVertexArrays(1)
         GL.glBindVertexArray(self._vao)
 
+    @override(ISB6AppDelegate)
     def application_will_terminate(self, app):
         if self._vao:
             GL.glDeleteVertexArrays(1, [self._vao])
@@ -61,6 +75,7 @@ class MyApplication(ISB6AppDelegate):
             if program:
                 GL.glDeleteProgram(program)
 
+    @override(ISB6AppDelegate)
     def render(self, app, currentTime):
         color = (
             math.sin(currentTime) * 0.5 + 0.5,
