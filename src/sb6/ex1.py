@@ -33,9 +33,9 @@ class MyApplication(ISB6AppDelegate):
     def create_shader_program(cls):
         shader_descriptions = [
             (GL.GL_VERTEX_SHADER, pkg_resources.resource_string(
-                __name__, 'ex1.vert')),
+                __name__, 'shaders/ex1.vert')),
             (GL.GL_FRAGMENT_SHADER, pkg_resources.resource_string(
-                __name__, 'ex1.frag'))]
+                __name__, 'shaders/ex1.frag'))]
 
         program = GL.glCreateProgram()
         try:

@@ -31,8 +31,8 @@ class IApplicationDelegate(object):
         pass
 
 cdef class Application:
-    cdef readonly bint is_running
     cdef readonly object delegate
+    cdef bint is_running
     cdef SB6ApplicationRef app
 
     def __cinit__(self):

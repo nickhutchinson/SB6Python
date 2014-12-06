@@ -23,10 +23,11 @@ setup(
     version='0.1',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    package_data={'': ['*.vert', '*.frag']},
+    package_data={'': ['shaders/*.vert', 'shaders/*.frag']},
     ext_modules=cythonize(exts),
     install_requires=[
         'Click',
+        'pyOpenGL',
     ],
     entry_points='''
         [gui_scripts]
