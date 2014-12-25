@@ -5,21 +5,10 @@ from OpenGL import GL
 import click
 import math
 import pkg_resources
-
+from .util import override
+from enum import Enum
 
 NULL_GL_OBJECT = 0
-
-def override(klass):
-    def f(meth):
-        name = meth.__name__
-        if not getattr(klass, name):
-            raise TypeError(
-                'Method {!r} must be overridden from class {!r}'.format(
-                    name,
-                    klass.__name__))
-        return meth
-
-    return f
 
 
 class MyApplication(ISB6AppDelegate):
@@ -77,15 +66,31 @@ class MyApplication(ISB6AppDelegate):
 
     @override(ISB6AppDelegate)
     def render(self, app, currentTime):
-        color = (
+        class Attrib(int, Enum):
+            TRIANGLE_OFFSET = 0
+            FG_COLOR = 1
+
+        GL.glUseProgram(self._program)
+
+        bg_color = (
             math.sin(currentTime) * 0.5 + 0.5,
             math.cos(currentTime) * 0.5 + 0.5,
             0.0,
             1.0
         )
-        GL.glClearBufferfv(GL.GL_COLOR, 0, color)
+        GL.glClearBufferfv(GL.GL_COLOR, 0, bg_color)
 
-        GL.glUseProgram(self._program)
+        offset = (
+            math.sin(currentTime) * 0.5,
+            math.cos(currentTime) * 0.6,
+            0.0,
+            0.0,
+        )
+        GL.glVertexAttrib4fv(Attrib.TRIANGLE_OFFSET, offset)
+
+        fg_color = (1.0, 0.5, 0.0, 1.0)
+        GL.glVertexAttrib4fv(Attrib.FG_COLOR, fg_color)
+
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
 
     def run(self):
