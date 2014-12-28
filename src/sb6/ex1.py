@@ -49,10 +49,8 @@ class MyApplication(ISB6AppDelegate):
     def window_did_resize(self, application, width, height):
         aspect = width / height
         proj_matrix = Matrix44.perspective_projection(
-            50.0,
-            aspect,
-            0.1,
-            100.0)
+            50.0, aspect, 0.1, 100.0,
+            dtype='f4')
         self._uniform_block.proj_matrix[:] = proj_matrix.reshape(16)
 
     @override(ISB6AppDelegate)
@@ -210,16 +208,16 @@ class MyApplication(ISB6AppDelegate):
             glClearBufferfv(GL_DEPTH, 0, [1])
 
             f = currentTime * 0.3
-            mv_matrix = (
-                Matrix44.identity()
-                * Matrix44.from_x_rotation(currentTime * math.radians(81))
-                * Matrix44.from_y_rotation(currentTime * math.radians(45))
-                * Matrix44.from_translation([
-                    math.sin(2.1 * f) * 0.5,
-                    math.cos(1.7 * f) * 0.5,
-                    math.sin(1.3 * f) * math.cos(1.5 * f) * 2.0])
-                * Matrix44.from_translation([0.0, 0.0, -4.0])
-            )
+            mv_matrix = Matrix44.identity(dtype='f4')
+            mv_matrix *= Matrix44.from_x_rotation(
+                currentTime * math.radians(81))
+            mv_matrix *= Matrix44.from_y_rotation(
+                currentTime * math.radians(45))
+            mv_matrix *= Matrix44.from_translation([
+                math.sin(2.1 * f) * 0.5,
+                math.cos(1.7 * f) * 0.5,
+                math.sin(1.3 * f) * math.cos(1.5 * f) * 2.0])
+            mv_matrix *= Matrix44.from_translation([0.0, 0.0, -4.0])
 
             self._uniform_block.mv_matrix[:] = mv_matrix.reshape(16)
 
