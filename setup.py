@@ -23,7 +23,7 @@ setup(
     version='0.1',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    package_data={'': ['shaders/*.vert', 'shaders/*.frag']},
+    package_data={'': ['shaders/*.vert', 'shaders/*.frag', 'resources/*.sbm']},
     ext_modules=cythonize(exts),
     install_requires=[
         'Click',

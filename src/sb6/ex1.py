@@ -2,14 +2,23 @@
 # encoding: utf-8
 from __future__ import print_function, division
 
+import os
 import click
 import logging
 import math
 import numpy as np
 import pkg_resources
 
-from .app import Application as SB6App, IApplicationDelegate as ISB6AppDelegate
-from .util import override, BufferObject, VertexArrayObject, ProgramObject, TextureObject
+from .app import (
+    Object as SB6Object,
+    Application as SB6App,
+    IApplicationDelegate as ISB6AppDelegate)
+from .util import (
+    override,
+    BufferObject,
+    VertexArrayObject,
+    ProgramObject,
+    TextureObject)
 from enum import Enum
 from lazy import lazy
 from OpenGL.GL import *
@@ -38,6 +47,8 @@ class MyApplication(ISB6AppDelegate):
         self._uniform_buffer = BufferObject()
         self._texture = TextureObject()
 
+        self._torus_obj = None
+
         self._uniform_block = MyUniformBlock()
 
     @property
@@ -58,10 +69,6 @@ class MyApplication(ISB6AppDelegate):
 
     @override(ISB6AppDelegate)
     def application_did_finish_launching(self, app):
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
-        glFrontFace(GL_CW)
-
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LEQUAL)
 
@@ -75,70 +82,6 @@ class MyApplication(ISB6AppDelegate):
         self._vao = VertexArrayObject(glGenVertexArrays(1))
         glBindVertexArray(self._vao.identifier)
         try:
-            ###################################################################
-            # Vertex array
-            self._vertices_buffer = BufferObject(glGenBuffers(1))
-            glBindBuffer(GL_ARRAY_BUFFER, self._vertices_buffer.identifier)
-            data = np.array([
-                -0.25, 0.25, -0.25,
-                -0.25, -0.25, -0.25,
-                0.25, -0.25, -0.25,
-
-                0.25, -0.25, -0.25,
-                0.25, 0.25, -0.25,
-                -0.25, 0.25, -0.25,
-
-                0.25, -0.25, -0.25,
-                0.25, -0.25, 0.25,
-                0.25, 0.25, -0.25,
-
-                0.25, -0.25, 0.25,
-                0.25, 0.25, 0.25,
-                0.25, 0.25, -0.25,
-
-                0.25, -0.25, 0.25,
-                -0.25, -0.25, 0.25,
-                0.25, 0.25, 0.25,
-
-                -0.25, -0.25, 0.25,
-                -0.25, 0.25, 0.25,
-                0.25, 0.25, 0.25,
-
-                -0.25, -0.25, 0.25,
-                -0.25, -0.25, -0.25,
-                -0.25, 0.25, 0.25,
-
-                -0.25, -0.25, -0.25,
-                -0.25, 0.25, -0.25,
-                -0.25, 0.25, 0.25,
-
-                -0.25, -0.25, 0.25,
-                0.25, -0.25, 0.25,
-                0.25, -0.25, -0.25,
-
-                0.25, -0.25, -0.25,
-                -0.25, -0.25, -0.25,
-                -0.25, -0.25, 0.25,
-
-                -0.25, 0.25, -0.25,
-                0.25, 0.25, -0.25,
-                0.25, 0.25, 0.25,
-
-                0.25, 0.25, 0.25,
-                -0.25, 0.25, 0.25,
-                -0.25, 0.25, -0.25
-            ], dtype='f4')
-
-            glBufferData(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW)
-            glVertexAttribPointer(
-                self.position_attrib_index,
-                3,
-                GL_FLOAT,
-                GL_FALSE,
-                0,
-                None)
-            glEnableVertexAttribArray(self.position_attrib_index)
-
             ###################################################################
             # Uniform block
             self._uniform_buffer = BufferObject(glGenBuffers(1))
@@ -159,31 +102,37 @@ class MyApplication(ISB6AppDelegate):
             glBindBufferBase(GL_UNIFORM_BUFFER, self.uniform_bind_point,
                              self._uniform_buffer.identifier)
 
-
             ###################################################################
-            # Textures
-
-            self._texture = TextureObject.create()
-            glBindTexture(GL_TEXTURE_2D, self._texture.identifier)
-            glTexStorage2D(GL_TEXTURE_2D,
-                           8, # mipmap level
-                           GL_RGBA32F,
-                           256,
-                           256)
-
-            data = np.zeros((256, 256, 4), dtype='f4', order='F')
-            self.generate_texture(data)
-            glTexSubImage2D(
-                GL_TEXTURE_2D,
-                0, #level 0
-                0, 0, #offset
-                256, 256, #size
-                GL_RGBA,
-                GL_FLOAT,
-                data)
+            # Objects
+            torus_path = pkg_resources.resource_filename(
+                __name__, "resources/torus_nrms_tc.sbm")
+            self._torus_obj = SB6Object(torus_path)
 
         finally:
             glBindVertexArray(NULL_GL_OBJECT)
+
+        ###################################################################
+        # Textures
+        self._texture = TextureObject.create()
+        glBindTexture(GL_TEXTURE_2D, self._texture.identifier)
+        glTexStorage2D(GL_TEXTURE_2D,
+                       8,  # mipmap level
+                       GL_RGBA32F,
+                       256,
+                       256)
+
+        data = np.zeros((256, 256, 4), dtype='f4', order='F')
+        self.generate_texture(data)
+        glTexSubImage2D(
+            GL_TEXTURE_2D,
+            0,  # level 0
+            0, 0,  # offset
+            256, 256,  # size
+            GL_RGBA,
+            GL_FLOAT,
+            data)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
     @override(ISB6AppDelegate)
     def application_will_terminate(self, app):
@@ -254,7 +203,7 @@ class MyApplication(ISB6AppDelegate):
                 ctypes.sizeof(self._uniform_block),
                 ctypes.byref(self._uniform_block))
 
-            glDrawArrays(GL_TRIANGLES, 0, 36)
+            self._torus_obj.render()
 
         finally:
             glBindVertexArray(NULL_GL_OBJECT)
@@ -273,6 +222,7 @@ class MyApplication(ISB6AppDelegate):
                     ((x ^ y) & 0xFF) / 255,
                     1.0
                 ]
+
 
 @click.command()
 def main():
