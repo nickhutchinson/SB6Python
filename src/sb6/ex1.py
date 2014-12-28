@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from __future__ import print_function, division
-from .app import Application as SB6App, IApplicationDelegate as ISB6AppDelegate
-from OpenGL.GL import *
+
 import click
-import math
-import pkg_resources
-from .util import override, BufferObject, VertexArrayObject, ProgramObject
-from enum import Enum
 import logging
+import math
 import numpy as np
+import pkg_resources
+
+from .app import Application as SB6App, IApplicationDelegate as ISB6AppDelegate
+from .util import override, BufferObject, VertexArrayObject, ProgramObject, TextureObject
+from enum import Enum
 from lazy import lazy
+from OpenGL.GL import *
 from pyrr import Matrix44, Vector4
 
 NULL_GL_OBJECT = 0
@@ -34,6 +36,7 @@ class MyApplication(ISB6AppDelegate):
         self._vao = VertexArrayObject()
         self._vertices_buffer = BufferObject()
         self._uniform_buffer = BufferObject()
+        self._texture = TextureObject()
 
         self._uniform_block = MyUniformBlock()
 
@@ -156,6 +159,29 @@ class MyApplication(ISB6AppDelegate):
             glBindBufferBase(GL_UNIFORM_BUFFER, self.uniform_bind_point,
                              self._uniform_buffer.identifier)
 
+
+            ###################################################################
+            # Textures
+
+            self._texture = TextureObject.create()
+            glBindTexture(GL_TEXTURE_2D, self._texture.identifier)
+            glTexStorage2D(GL_TEXTURE_2D,
+                           8, # mipmap level
+                           GL_RGBA32F,
+                           256,
+                           256)
+
+            data = np.zeros((256, 256, 4), dtype='f4', order='F')
+            self.generate_texture(data)
+            glTexSubImage2D(
+                GL_TEXTURE_2D,
+                0, #level 0
+                0, 0, #offset
+                256, 256, #size
+                GL_RGBA,
+                GL_FLOAT,
+                data)
+
         finally:
             glBindVertexArray(NULL_GL_OBJECT)
 
@@ -165,6 +191,7 @@ class MyApplication(ISB6AppDelegate):
         self._program.invalidate()
         self._vertices_buffer.invalidate()
         self._uniform_buffer.invalidate()
+        self._texture.invalidate()
 
     @classmethod
     def create_shader_program(cls, shader_descriptions):
@@ -235,6 +262,17 @@ class MyApplication(ISB6AppDelegate):
     def run(self):
         self._app.run()
 
+    @classmethod
+    def generate_texture(cls, data):
+        height, width, n = data.shape
+        for y in xrange(height):
+            for x in xrange(width):
+                data[y][x] = [
+                    ((x & y) & 0xFF) / 255,
+                    ((x | y) & 0xFF) / 255,
+                    ((x ^ y) & 0xFF) / 255,
+                    1.0
+                ]
 
 @click.command()
 def main():
