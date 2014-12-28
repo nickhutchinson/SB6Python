@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from __future__ import print_function, division
 from .app import Application as SB6App, IApplicationDelegate as ISB6AppDelegate
 from OpenGL.GL import *
 import click
@@ -19,7 +20,8 @@ logging.basicConfig()
 
 class MyUniformBlock(ctypes.Structure):
     _fields_ = (
-        ("offset", ctypes.c_float * 4),
+        ("mv_matrix", ctypes.c_float * 16),
+        ("proj_matrix", ctypes.c_float * 16),
     )
 
 
@@ -45,14 +47,22 @@ class MyApplication(ISB6AppDelegate):
 
     @override(ISB6AppDelegate)
     def window_did_resize(self, application, width, height):
-        pass
-        # print("Resize {}x{}".format(width, height))
+        aspect = width / height
+        proj_matrix = Matrix44.perspective_projection(
+            50.0,
+            aspect,
+            0.1,
+            100.0)
+        self._uniform_block.proj_matrix[:] = proj_matrix.reshape(16)
 
     @override(ISB6AppDelegate)
     def application_did_finish_launching(self, app):
         glEnable(GL_CULL_FACE)
         glCullFace(GL_BACK)
         glFrontFace(GL_CW)
+
+        glEnable(GL_DEPTH_TEST)
+        glDepthFunc(GL_LEQUAL)
 
         self._program = self.create_shader_program([
             (GL_VERTEX_SHADER, pkg_resources.resource_string(
@@ -68,16 +78,60 @@ class MyApplication(ISB6AppDelegate):
             # Vertex array
             self._vertices_buffer = BufferObject(glGenBuffers(1))
             glBindBuffer(GL_ARRAY_BUFFER, self._vertices_buffer.identifier)
-            data = np.array((
-                0.25, -0.25, 0.5, 1.0,
-                -0.25, -0.25, 0.5, 1.0,
-                0.25, 0.25, 0.5, 1.0,),
-                dtype='f4')
+            data = np.array([
+                -0.25, 0.25, -0.25,
+                -0.25, -0.25, -0.25,
+                0.25, -0.25, -0.25,
+
+                0.25, -0.25, -0.25,
+                0.25, 0.25, -0.25,
+                -0.25, 0.25, -0.25,
+
+                0.25, -0.25, -0.25,
+                0.25, -0.25, 0.25,
+                0.25, 0.25, -0.25,
+
+                0.25, -0.25, 0.25,
+                0.25, 0.25, 0.25,
+                0.25, 0.25, -0.25,
+
+                0.25, -0.25, 0.25,
+                -0.25, -0.25, 0.25,
+                0.25, 0.25, 0.25,
+
+                -0.25, -0.25, 0.25,
+                -0.25, 0.25, 0.25,
+                0.25, 0.25, 0.25,
+
+                -0.25, -0.25, 0.25,
+                -0.25, -0.25, -0.25,
+                -0.25, 0.25, 0.25,
+
+                -0.25, -0.25, -0.25,
+                -0.25, 0.25, -0.25,
+                -0.25, 0.25, 0.25,
+
+                -0.25, -0.25, 0.25,
+                0.25, -0.25, 0.25,
+                0.25, -0.25, -0.25,
+
+                0.25, -0.25, -0.25,
+                -0.25, -0.25, -0.25,
+                -0.25, -0.25, 0.25,
+
+                -0.25, 0.25, -0.25,
+                0.25, 0.25, -0.25,
+                0.25, 0.25, 0.25,
+
+                0.25, 0.25, 0.25,
+                -0.25, 0.25, 0.25,
+                -0.25, 0.25, -0.25
+            ], dtype='f4')
 
             glBufferData(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW)
             glVertexAttribPointer(
                 self.position_attrib_index,
-                4,
+                3,
                 GL_FLOAT,
                 GL_FALSE,
                 0,
@@ -153,13 +207,21 @@ class MyApplication(ISB6AppDelegate):
                 1.0
             )
             glClearBufferfv(GL_COLOR, 0, bg_color)
+            glClearBufferfv(GL_DEPTH, 0, [1])
 
-            self._uniform_block.offset = (
-                math.sin(currentTime) * 0.5,
-                math.cos(currentTime) * 0.6,
-                0.0,
-                0.0,
+            f = currentTime * 0.3
+            mv_matrix = (
+                Matrix44.identity()
+                * Matrix44.from_x_rotation(currentTime * math.radians(81))
+                * Matrix44.from_y_rotation(currentTime * math.radians(45))
+                * Matrix44.from_translation([
+                    math.sin(2.1 * f) * 0.5,
+                    math.cos(1.7 * f) * 0.5,
+                    math.sin(1.3 * f) * math.cos(1.5 * f) * 2.0])
+                * Matrix44.from_translation([0.0, 0.0, -4.0])
             )
+
+            self._uniform_block.mv_matrix[:] = mv_matrix.reshape(16)
 
             glBufferSubData(
                 GL_UNIFORM_BUFFER,
@@ -167,7 +229,7 @@ class MyApplication(ISB6AppDelegate):
                 ctypes.sizeof(self._uniform_block),
                 ctypes.byref(self._uniform_block))
 
-            glDrawArrays(GL_TRIANGLES, 0, 3)
+            glDrawArrays(GL_TRIANGLES, 0, 36)
 
         finally:
             glBindVertexArray(NULL_GL_OBJECT)
