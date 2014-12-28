@@ -12,6 +12,7 @@ cdef extern from "sb6-c.h":
         void (*render)(void* self, double currentTime)
         void (*startup)(void* self);
         void (*shutdown)(void* self);
+        void (*onResize)(void* self, int w, int h);
 
 
     SB6ApplicationRef SB6ApplicationCreate(const SB6AppContext*)
@@ -33,6 +34,9 @@ class IApplicationDelegate(object):
     def application_will_terminate(self, application):
         pass
 
+    def window_did_resize(self, application, width, height):
+        pass
+
 cdef class Application:
     cdef readonly object delegate
     cdef bint is_running
@@ -44,6 +48,7 @@ cdef class Application:
         context.render = self._render
         context.startup = self._startup
         context.shutdown = self._shutdown
+        context.onResize = self._resize
 
         self.is_running = False
         self.app = SB6ApplicationCreate(&context)
@@ -87,6 +92,15 @@ cdef class Application:
         cdef Application self = <Application>context_self
         try:
             self.delegate.application_will_terminate(self)
+        except:
+            traceback.print_exc()
+            os._exit(1)
+
+    @staticmethod
+    cdef void _resize(void* context_self, int w, int h):
+        cdef Application self = <Application>context_self
+        try:
+            self.delegate.window_did_resize(self, w, h)
         except:
             traceback.print_exc()
             os._exit(1)

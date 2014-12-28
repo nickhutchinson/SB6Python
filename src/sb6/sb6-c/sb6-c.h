@@ -11,9 +11,10 @@ struct SB6AppContext {
   void (*render)(void* self, double currentTime);
   void (*startup)(void* self);
   void (*shutdown)(void* self);
+  void (*onResize)(void* self, int w, int h);
 };
 
-typedef struct __SB6Application* SB6ApplicationRef;
+typedef struct _sb6_application* SB6ApplicationRef;
 
 SB6_EXTERN
 SB6ApplicationRef SB6ApplicationCreate(const struct SB6AppContext*);
