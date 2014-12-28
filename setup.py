@@ -27,7 +27,10 @@ setup(
     ext_modules=cythonize(exts),
     install_requires=[
         'Click',
+        'numpy',
+        'pyrr',
         'pyOpenGL',
+        'pyOpenGL_Accelerate',
     ],
     entry_points='''
         [gui_scripts]
