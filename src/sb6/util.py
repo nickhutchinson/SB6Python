@@ -1,4 +1,5 @@
 from OpenGL import GL
+from .app import texture_load_from_file
 
 NULL_GL_OBJECT = 0
 
@@ -43,6 +44,17 @@ class ProgramObject(GLObject):
     @classmethod
     def _delete(cls, identifier):
         GL.glDeleteProgram(identifier)
+
+class TextureObject(GLObject):
+
+    @classmethod
+    def create(cls):
+        return cls(GL.glGenTextures(1))
+
+    def _delete(cls, identifier):
+        # Passing an explict length seems to error, unlke other glDeleteXXX
+        # calls.
+        GL.glDeleteTextures([identifier])
 
 
 

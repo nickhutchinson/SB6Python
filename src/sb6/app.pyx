@@ -20,6 +20,13 @@ cdef extern from "sb6-c.h":
     void SB6ApplicationDispose(SB6ApplicationRef)
 
 
+cdef extern:
+    void SB6TextureLoadFromFile(unsigned textureID, const char* path)
+
+
+def texture_load_from_file(texture_id, path):
+    SB6TextureLoadFromFile(texture_id, path)
+
 import abc, weakref
 
 class IApplicationDelegate(object):

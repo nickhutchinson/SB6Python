@@ -1,6 +1,7 @@
 #include "sb6-c.h"
 
 #include <sb6.h>
+#include <sb6ktx.h>
 
 // #if __cplusplus > 199711L
 #define OVERRIDE override
@@ -53,4 +54,7 @@ void SB6ApplicationDispose(SB6ApplicationRef app)
     delete app;
 }
 
-
+void SB6TextureLoadFromFile(unsigned textureID, const char* path)
+{
+  sb6::ktx::file::load(path, textureID);
+}

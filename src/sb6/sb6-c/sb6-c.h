@@ -25,3 +25,5 @@ void SB6ApplicationRun(SB6ApplicationRef);
 SB6_EXTERN
 void SB6ApplicationDispose(SB6ApplicationRef);
 
+SB6_EXTERN
+void SB6TextureLoadFromFile(unsigned textureID, const char* path);
