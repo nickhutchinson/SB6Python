@@ -1,3 +1,6 @@
+import os
+import traceback
+
 cdef extern from "sb6-c.h":
     cdef struct __SB6Application:
         pass
@@ -64,14 +67,26 @@ cdef class Application:
     @staticmethod
     cdef void _render(void* context_self, double currentTime):
         cdef Application self = <Application>context_self
-        self.delegate.render(self, currentTime)
+        try:
+            self.delegate.render(self, currentTime)
+        except:
+            traceback.print_exc()
+            os._exit(1)
 
     @staticmethod
     cdef void _startup(void* context_self):
         cdef Application self = <Application>context_self
-        self.delegate.application_did_finish_launching(self)
+        try:
+            self.delegate.application_did_finish_launching(self)
+        except:
+            traceback.print_exc()
+            os._exit(1)
 
     @staticmethod
     cdef void _shutdown(void* context_self):
         cdef Application self = <Application>context_self
-        self.delegate.application_will_terminate(self)
+        try:
+            self.delegate.application_will_terminate(self)
+        except:
+            traceback.print_exc()
+            os._exit(1)
