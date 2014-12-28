@@ -20,10 +20,24 @@ SB6_EXTERN
 SB6ApplicationRef SB6ApplicationCreate(const struct SB6AppContext*);
 
 SB6_EXTERN
-void SB6ApplicationRun(SB6ApplicationRef);
-
-SB6_EXTERN
 void SB6ApplicationDispose(SB6ApplicationRef);
 
 SB6_EXTERN
+void SB6ApplicationRun(SB6ApplicationRef);
+
+////////////////////////////////////////////////////////////////////////////////
+
+SB6_EXTERN
 void SB6TextureLoadFromFile(unsigned textureID, const char* path);
+
+////////////////////////////////////////////////////////////////////////////////
+typedef struct _sb6_object* SB6ObjectRef;
+
+SB6_EXTERN
+SB6ObjectRef SB6ObjectCreateFromFile(const char* filePath);
+
+SB6_EXTERN
+void SB6ObjectDispose(SB6ObjectRef);
+
+SB6_EXTERN
+void SB6ObjectRender(SB6ObjectRef);

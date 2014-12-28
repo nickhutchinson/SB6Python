@@ -1,11 +1,13 @@
+import abc
 import os
 import traceback
+import weakref
 
 cdef extern from "sb6-c.h":
-    cdef struct __SB6Application:
+    cdef struct _sb6_application:
         pass
 
-    ctypedef __SB6Application * SB6ApplicationRef
+    ctypedef _sb6_application * SB6ApplicationRef
 
     cdef struct SB6AppContext:
         void* self
@@ -19,15 +21,35 @@ cdef extern from "sb6-c.h":
     void SB6ApplicationRun(SB6ApplicationRef)
     void SB6ApplicationDispose(SB6ApplicationRef)
 
+    cdef struct _sb6_object:
+        pass
 
-cdef extern:
+    ctypedef _sb6_object * SB6ObjectRef
+
+    SB6ObjectRef SB6ObjectCreateFromFile(const char* filePath)
+    void SB6ObjectDispose(SB6ObjectRef)
+    void SB6ObjectRender(SB6ObjectRef)
+
     void SB6TextureLoadFromFile(unsigned textureID, const char* path)
 
 
 def texture_load_from_file(texture_id, path):
     SB6TextureLoadFromFile(texture_id, path)
 
-import abc, weakref
+
+cdef class Object:
+    cdef SB6ObjectRef impl
+
+    def __cinit__(self, file_path):
+        self.impl = SB6ObjectCreateFromFile(file_path)
+
+    def render(self):
+        SB6ObjectRender(self.impl)
+
+    def __dealloc__(self):
+        if self.impl:
+            SB6ObjectDispose(self.impl)
+
 
 class IApplicationDelegate(object):
     __metaclass__ = abc.ABCMeta
