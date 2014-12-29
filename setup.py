@@ -35,6 +35,7 @@ setup(
     entry_points='''
         [gui_scripts]
         sb6_ex1=sb6.ex1:main
+        sb6_ex2=sb6.ex2:main
     ''',
 )
 
