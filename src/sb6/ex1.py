@@ -8,6 +8,7 @@ import logging
 import math
 import numpy as np
 import pkg_resources
+import contextlib
 
 from .app import (
     Object as SB6Object,
@@ -17,6 +18,7 @@ from .util import (
     override,
     BufferObject,
     VertexArrayObject,
+    ShaderObject,
     ProgramObject,
     TextureObject)
 from enum import Enum
@@ -34,6 +36,14 @@ class MyUniformBlock(ctypes.Structure):
         ("mv_matrix", ctypes.c_float * 16),
         ("proj_matrix", ctypes.c_float * 16),
     )
+
+
+@contextlib.contextmanager
+def gl_cleanup():
+    objects = set()
+    yield objects
+    for elem in objects:
+        elem.invalidate()
 
 
 class MyApplication(ISB6AppDelegate):
@@ -144,29 +154,26 @@ class MyApplication(ISB6AppDelegate):
 
     @classmethod
     def create_shader_program(cls, shader_descriptions):
-        program = ProgramObject(glCreateProgram())
-        try:
-            for shader_type, shader_source in shader_descriptions:
-                s = glCreateShader(shader_type)
-                try:
-                    glShaderSource(s, shader_source)
-                    glCompileShader(s)
-                    success = glGetShaderiv(s, GL_COMPILE_STATUS)
-                    if not success:
-                        raise RuntimeError(glGetShaderInfoLog(s))
+        with gl_cleanup() as cleanup:
+            program = ProgramObject(glCreateProgram())
+            cleanup.add(program)
 
-                    glAttachShader(program.identifier, s)
-                finally:
-                    glDeleteShader(s)
+            for shader_type, shader_source in shader_descriptions:
+                s = ShaderObject.create(shader_type)
+                cleanup.add(s)
+
+                glShaderSource(s.identifier, shader_source)
+                glCompileShader(s.identifier)
+                success = glGetShaderiv(s.identifier, GL_COMPILE_STATUS)
+                if not success:
+                    raise RuntimeError(glGetShaderInfoLog(s.identifier))
+
+                glAttachShader(program.identifier, s.identifier)
 
             glLinkProgram(program.identifier)
 
-            ret, program = program, None
-            return ret
-
-        finally:
-            if program:
-                program.invalidate()
+            cleanup.remove(program)
+            return program
 
     @override(ISB6AppDelegate)
     def render(self, app, currentTime):
